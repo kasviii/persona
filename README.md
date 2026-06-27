@@ -5,8 +5,7 @@ scores using a regression model trained on real survey data, visualizes your
 profile on an animated radar chart, maps you onto the wider population with
 PCA, and generates a shareable result card.
 
-**Live demo:** open `personality-predictor.html` in any browser, or deploy it
-as a static site (see [Deploying](#deploying) below).
+**Live demo:** https://kasviii.github.io/persona/
 
 ---
 
