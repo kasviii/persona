@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aura — find your personality profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cloud:#FAF7FF;
+    --ink:#241433;
+    --ink-soft:#5B4B6E;
+    --card:#FFFFFF;
+    --line:#E7DFF5;
+    --o:#FF6F61; /* openness - coral */
+    --c:#F4A300; /* conscientiousness - amber */
+    --e:#FF4D8D; /* extraversion - pink */
+    --a:#2EC4A6; /* agreeableness - mint */
+    --n:#6C7FFF; /* neuroticism - periwinkle */
+    --shadow: 0 12px 32px -12px rgba(36,20,51,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cloud);
+    color:var(--ink);
+    font-family:'Plus Jakarta Sans', sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .stage{
+    max-width:760px;
+    margin:0 auto;
+    padding:32px 20px 80px;
+    position:relative;
+    min-height:100vh;
+  }
+  h1,h2,h3{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    margin:0;
+    line-height:1.1;
+  }
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:6px;height:6px;border-radius:50%;
+    background:linear-gradient(135deg,var(--o),var(--e));
+    display:inline-block;
+  }
+  .screen{ display:none; animation:fadeUp .55s cubic-bezier(.2,.8,.2,1) both; }
+  .screen.active{ display:block; }
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* ---------- Aura orb (signature element) ---------- */
+  .orb-wrap{
+    display:flex; justify-content:center; margin: 18px 0 8px;
+  }
+  .orb{
+    width:180px; height:180px; border-radius:50%;
+    position:relative;
+    filter: blur(0.3px);
+    box-shadow: 0 30px 60px -20px rgba(108,127,255,0.35);
+    transition: box-shadow .6s ease;
+  }
+  .orb::before, .orb::after{
+    content:'';
+    position:absolute; inset:0;
+    border-radius:50%;
+  }
+  .orb-core{
+    position:absolute; inset:0; border-radius:50%;
+    background: conic-gradient(from 0deg, var(--o), var(--c), var(--e), var(--a), var(--n), var(--o));
+    animation: spin 14s linear infinite;
+    opacity:0.9;
+  }
+  .orb-glass{
+    position:absolute; inset:8%; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.85), rgba(255,255,255,0.05) 55%, rgba(255,255,255,0) 70%);
+    mix-blend-mode: screen;
+  }
+  .orb-blur{
+    position:absolute; inset:-12%; border-radius:50%;
+    background: inherit;
+    filter: blur(22px);
+    opacity:0.55;
+    z-index:-1;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .orb.small{ width:64px; height:64px; }
+
+  /* ---------- Hero ---------- */
+  .hero{ text-align:center; padding-top:8px; }
+  .hero h1{ font-size:40px; margin-top:10px; }
+  .hero h1 span{
+    background:linear-gradient(120deg,var(--e),var(--n));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.sub{
+    color:var(--ink-soft); font-size:16px; max-width:480px; margin:14px auto 28px;
+  }
+  .trait-chips{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:30px; }
+  .chip{
+    font-family:'Space Mono', monospace; font-size:11px; padding:6px 12px;
+    border-radius:100px; color:#fff; letter-spacing:.03em;
+  }
+  .btn{
+    font-family:'Fredoka', sans-serif; font-weight:600; font-size:16px;
+    border:none; cursor:pointer; border-radius:100px;
+    padding:14px 30px; color:#fff;
+    background:linear-gradient(120deg,var(--e),var(--n));
+    box-shadow: 0 14px 28px -10px rgba(108,127,255,0.55);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); box-shadow: 0 18px 32px -10px rgba(108,127,255,0.65); }
+  .btn:active{ transform:translateY(0px) scale(.98); }
+  .btn.ghost{
+    background:transparent; color:var(--ink); border:1.5px solid var(--line);
+    box-shadow:none;
+  }
+  .btn.ghost:hover{ border-color:var(--ink-soft); }
+  .btn-row{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:6px;}
+  .small-note{ font-size:12.5px; color:var(--ink-soft); margin-top:14px; }
+
+  /* ---------- Quiz ---------- */
+  .quiz-top{ display:flex; align-items:center; gap:16px; margin-bottom:10px; }
+  .progress-track{
+    flex:1; height:8px; border-radius:100px; background:var(--line); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; border-radius:100px;
+    background:linear-gradient(90deg,var(--o),var(--e),var(--n));
+    width:0%; transition: width .5s cubic-bezier(.2,.8,.2,1);
+  }
+  .progress-label{ font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .q-card{
+    background:var(--card); border:1px solid var(--line); border-radius:24px;
+    padding:38px 30px 30px; box-shadow:var(--shadow);
+    margin-top:18px;
+  }
+  .q-trait-tag{
+    font-family:'Space Mono', monospace; font-size:11px; text-transform:uppercase;
+    letter-spacing:.08em; padding:4px 10px; border-radius:100px; display:inline-block; color:#fff; margin-bottom:18px;
+  }
+  .q-text{ font-family:'Fredoka', sans-serif; font-size:23px; font-weight:600; line-height:1.35; min-height:64px; }
+  .scale{ display:flex; gap:8px; margin-top:28px; }
+  .scale button{
+    flex:1; aspect-ratio:1/1; border-radius:16px; border:1.5px solid var(--line);
+    background:#fff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:'Space Mono', monospace; gap:6px; transition: all .15s ease;
+  }
+  .scale button .dot{ width:14px; height:14px; border-radius:50%; border:2px solid var(--line); transition:all .15s ease; }
+  .scale button span.lbl{ font-size:9.5px; color:var(--ink-soft); text-align:center; padding:0 2px; line-height:1.2; }
+  .scale button:hover{ border-color:var(--ink-soft); transform:translateY(-2px); }
+  .scale button.sel{ border-color:var(--ink); background:var(--ink); }
+  .scale button.sel .dot{ background:#fff; border-color:#fff; }
+  .scale button.sel span.lbl{ color:#fff; }
+  .quiz-nav{ display:flex; justify-content:space-between; margin-top:22px; }
+
+  /* ---------- Results ---------- */
+  .result-banner{
+    text-align:center; padding:8px 0 6px;
+  }
+  .result-banner h2{ font-size:30px; margin-top:6px; }
+  .result-tagline{ color:var(--ink-soft); margin-top:8px; font-size:15.5px; max-width:460px; margin-left:auto; margin-right:auto;}
+  .section{ margin-top:42px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .section-head h3{ font-size:19px; }
+  .toggle{
+    display:flex; align-items:center; gap:8px; font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); cursor:pointer; user-select:none;
+  }
+  .toggle .switch{
+    width:34px; height:20px; border-radius:100px; background:var(--line); position:relative; transition:.2s;
+  }
+  .toggle .switch::after{
+    content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25); transition:.2s;
+  }
+  .toggle.on .switch{ background:var(--ink); }
+  .toggle.on .switch::after{ left:16px; }
+
+  .chart-card{
+    background:var(--card); border:1px solid var(--line); border-radius:24px; padding:20px; box-shadow:var(--shadow);
+  }
+  .legend{ display:flex; gap:18px; justify-content:center; margin-top:6px; flex-wrap:wrap;}
+  .legend-item{ display:flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft);}
+  .legend-swatch{ width:10px; height:10px; border-radius:50%; }
+  .legend-swatch.avg{ border:2px dashed var(--ink-soft); background:transparent; }
+
+  .trait-list{ display:flex; flex-direction:column; gap:14px; }
+  .trait-row{
+    background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px 20px;
+    box-shadow:var(--shadow);
+  }
+  .trait-row-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .trait-name{ font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; display:flex; align-items:center; gap:8px;}
+  .trait-dot{ width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .trait-score{ font-family:'Space Mono',monospace; font-size:14px; color:var(--ink-soft); }
+  .bar-track{ height:10px; border-radius:100px; background:var(--line); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:100px; width:0%; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .trait-desc{ font-size:14px; color:var(--ink-soft); margin-top:12px; line-height:1.5; }
+
+  .pca-caption{ font-size:13.5px; color:var(--ink-soft); margin-top:12px; line-height:1.55; }
+  .pca-caption b{ color:var(--ink); }
+
+  .card-preview-wrap{ display:flex; justify-content:center; margin-top:6px;}
+  #shareCanvas{ width:100%; max-width:320px; border-radius:18px; box-shadow:var(--shadow); }
+
+  footer.endnav{ display:flex; justify-content:center; gap:12px; margin-top:46px; flex-wrap:wrap;}
+
+  @media (max-width:520px){
+    .hero h1{ font-size:31px; }
+    .q-text{ font-size:19px; }
+    .scale button span.lbl{ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- HERO -->
+  <section class="screen active" id="screen-hero">
+    <div class="eyebrow">five traits · one orb · zero judgement</div>
+    <div class="hero">
+      <div class="orb-wrap"><div class="orb" id="heroOrb"><div class="orb-blur"></div><div class="orb-core"></div><div class="orb-glass"></div></div></div>
+      <h1>Find your <span>personality aura</span></h1>
+      <p class="sub">Answer 20 quick statements. A small regression model — trained live, in your browser, on a simulated population — turns your answers into a Big Five profile, then maps you onto everyone else with PCA.</p>
+      <div class="trait-chips">
+        <span class="chip" style="background:var(--o)">Openness</span>
+        <span class="chip" style="background:var(--c)">Conscientiousness</span>
+        <span class="chip" style="background:var(--e)">Extraversion</span>
+        <span class="chip" style="background:var(--a)">Agreeableness</span>
+        <span class="chip" style="background:var(--n)">Neuroticism</span>
+      </div>
+      <button class="btn" id="startBtn">Begin the quiz →</button>
+      <div class="small-note">Takes about 3 minutes. Nothing is sent anywhere — it all happens on this page.</div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-top">
+      <div class="orb small" id="quizOrb"><div class="orb-blur"></div><div class="orb-core"></div><div class="orb-glass"></div></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">1 / 20</div>
+    </div>
+    <div class="q-card">
+      <span class="q-trait-tag" id="qTraitTag">Openness</span>
+      <div class="q-text" id="qText">—</div>
+      <div class="scale" id="qScale"></div>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn ghost" id="backBtn">← Back</button>
+      <button class="btn ghost" id="skipBtn">Skip question</button>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="screen" id="screen-results">
+    <div class="result-banner">
+      <div class="orb-wrap"><div class="orb" id="resultOrb"><div class="orb-blur"></div><div class="orb-core"></div><div class="orb-glass"></div></div></div>
+      <div class="eyebrow" style="justify-content:center;">your aura, decoded</div>
+      <h2 id="resultTitle">—</h2>
+      <p class="result-tagline" id="resultTagline">—</p>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h3>Your Big Five radar</h3>
+        <div class="toggle" id="avgToggle"><div class="switch"></div><span>Compare to average</span></div>
+      </div>
+      <div class="chart-card">
+        <svg id="radarSvg" viewBox="0 0 360 360" width="100%" height="320"></svg>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(120deg,var(--e),var(--n));"></span> You</div>
+          <div class="legend-item"><span class="legend-swatch avg"></span> Simulated average</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h3>Trait breakdown</h3></div>
+      <div class="trait-list" id="traitList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h3>Where you land in the population (PCA)</h3></div>
+      <div class="chart-card">
+        <svg id="pcaSvg" viewBox="0 0 360 300" width="100%" height="260"></svg>
+        <p class="pca-caption" id="pcaCaption">—</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h3>Shareable card</h3></div>
+      <div class="card-preview-wrap"><canvas id="shareCanvas" width="600" height="800"></canvas></div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" id="downloadBtn">Download card</button>
+      </div>
+    </div>
+
+    <footer class="endnav">
+      <button class="btn ghost" id="retakeBtn">↺ Retake the quiz</button>
+    </footer>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   1. DATA — questions, trait metadata
+   ========================================================================= */
+
+const TRAITS = [
+  { key:'O', name:'Openness',          color:'#FF6F61', cssVar:'--o' },
+  { key:'C', name:'Conscientiousness', color:'#F4A300', cssVar:'--c' },
+  { key:'E', name:'Extraversion',      color:'#FF4D8D', cssVar:'--e' },
+  { key:'A', name:'Agreeableness',     color:'#2EC4A6', cssVar:'--a' },
+  { key:'N', name:'Neuroticism',       color:'#6C7FFF', cssVar:'--n' },
+];
+const TRAIT_INDEX = { O:0, C:1, E:2, A:3, N:4 };
+
+const QUESTIONS = [
+  // Openness
+  { trait:'O', reverse:false, text:"I get a real spark from new ideas, places, or unfamiliar ways of doing things." },
+  { trait:'O', reverse:false, text:"Given a choice, I'd rather explore something unfamiliar than stick with what I already know." },
+  { trait:'O', reverse:false, text:"Abstract or theoretical conversations genuinely interest me." },
+  { trait:'O', reverse:true,  text:"I'm happiest sticking to familiar routines rather than chasing novelty." },
+  // Conscientiousness
+  { trait:'C', reverse:false, text:"I make plans and I actually follow through on them." },
+  { trait:'C', reverse:false, text:"My space and my schedule tend to stay pretty organized." },
+  { trait:'C', reverse:false, text:"I double-check details before I call something finished." },
+  { trait:'C', reverse:true,  text:"I often leave tasks half-done or put them off until later." },
+  // Extraversion
+  { trait:'E', reverse:false, text:"Being around other people tends to energize me rather than drain me." },
+  { trait:'E', reverse:false, text:"In group settings, I'm usually one of the first to speak up." },
+  { trait:'E', reverse:false, text:"I actively seek out social gatherings and meeting new people." },
+  { trait:'E', reverse:true,  text:"I need a lot of quiet time alone to feel recharged." },
+  // Agreeableness
+  { trait:'A', reverse:false, text:"I'll go out of my way to help someone, even a total stranger." },
+  { trait:'A', reverse:false, text:"I tend to assume good intentions in people until I'm shown otherwise." },
+  { trait:'A', reverse:false, text:"Keeping the peace matters more to me than winning an argument." },
+  { trait:'A', reverse:true,  text:"I have fairly little patience for other people's problems." },
+  // Neuroticism
+  { trait:'N', reverse:false, text:"A small setback can throw off my mood for the rest of the day." },
+  { trait:'N', reverse:false, text:"I often find myself worrying about things outside my control." },
+  { trait:'N', reverse:false, text:"My emotions can swing quickly when I'm under pressure." },
+  { trait:'N', reverse:true,  text:"I tend to stay pretty even-keeled, even when things go wrong." },
+];
+
+const SCALE_LABELS = ["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"];
+
+/* =========================================================================
+   2. LINEAR ALGEBRA UTILITIES (small, dependency-free)
+   ========================================================================= */
+
+function zeros(r,c){ const m=new Array(r); for(let i=0;i<r;i++){ m[i]=new Array(c).fill(0); } return m; }
+function transpose(A){ const r=A.length, c=A[0].length; const T=zeros(c,r); for(let i=0;i<r;i++) for(let j=0;j<c;j++) T[j][i]=A[i][j]; return T; }
+function matmul(A,B){
+  const r=A.length, k=A[0].length, c=B[0].length;
+  const R=zeros(r,c);
+  for(let i=0;i<r;i++){
+    for(let p=0;p<k;p++){
+      const a=A[i][p];
+      if(a===0) continue;
+      for(let j=0;j<c;j++){ R[i][j]+=a*B[p][j]; }
+    }
+  }
+  return R;
+}
+function matvec(A,v){
+  const r=A.length, c=A[0].length;
+  const out=new Array(r).fill(0);
+  for(let i=0;i<r;i++){ let s=0; for(let j=0;j<c;j++) s+=A[i][j]*v[j]; out[i]=s; }
+  return out;
+}
+function addScaledIdentity(A, lambda){
+  const n=A.length; const R=A.map(row=>row.slice());
+  for(let i=0;i<n;i++) R[i][i]+=lambda;
+  return R;
+}
+// Gauss-Jordan inverse for small square matrices
+function invert(A){
+  const n=A.length;
+  const M=A.map((row,i)=> row.concat(row.map((_,j)=> i===j?1:0)));
+  for(let col=0; col<n; col++){
+    // pivot
+    let pivot=col;
+    for(let r=col;r<n;r++){ if(Math.abs(M[r][col])>Math.abs(M[pivot][col])) pivot=r; }
+    if(pivot!==col){ const tmp=M[col]; M[col]=M[pivot]; M[pivot]=tmp; }
+    const pv=M[col][col] || 1e-9;
+    for(let j=0;j<2*n;j++) M[col][j]/=pv;
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const factor=M[r][col];
+      if(factor===0) continue;
+      for(let j=0;j<2*n;j++) M[r][j]-=factor*M[col][j];
+    }
+  }
+  return M.map(row=>row.slice(n));
+}
+function vecSub(a,b){ return a.map((v,i)=>v-b[i]); }
+function vecAdd(a,b){ return a.map((v,i)=>v+b[i]); }
+function vecScale(a,s){ return a.map(v=>v*s); }
+function dot(a,b){ let s=0; for(let i=0;i<a.length;i++) s+=a[i]*b[i]; return s; }
+function norm(a){ return Math.sqrt(dot(a,a)); }
+function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+
+// simple seeded PRNG so each run is reproducible-ish per session but varies between page loads
+let _seed = Date.now() % 2147483647;
+function rand(){ _seed = (_seed * 16807) % 2147483647; return (_seed - 1) / 2147483646; }
+function gaussian(mean, sd){
+  const u1=Math.max(rand(),1e-9), u2=rand();
+  const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  return mean + z*sd;
+}
+
+/* =========================================================================
+   3. SYNTHETIC POPULATION + RIDGE REGRESSION "TRAINING"
+   For each trait we simulate N synthetic respondents whose latent trait
+   value (0-100) generates noisy 1-5 answers on that trait's 4 items
+   (flipped for reverse-scored items). We then fit a ridge regression
+   per trait — discovering, from data, both the magnitude AND the sign
+   of each item's contribution (reverse items end up with negative
+   learned weight automatically, with no scoring key hard-coded in).
+   ========================================================================= */
+
+const N_SYNTH = 400;
+const LAMBDA = 2.0; // ridge regularization
+
+function itemsForTrait(traitKey){
+  return QUESTIONS
+    .map((q,idx)=>({...q, idx}))
+    .filter(q=>q.trait===traitKey);
+}
+
+function buildModel(){
+  const models = {}; // traitKey -> { weights: [w0..w4], itemIdx: [..] }
+  const synthLatents = []; // N_SYNTH x 5 ground-truth latents, for population reference
+  const synthAnswersByTrait = {}; // traitKey -> N_SYNTH x 4 raw answers
+
+  // pre-generate shared latent vectors so traits correlate loosely like real personality data
+  for(let s=0;s<N_SYNTH;s++){
+    synthLatents.push(TRAITS.map(()=> rand()*100));
+  }
+
+  TRAITS.forEach(t=>{
+    const items = itemsForTrait(t.key);
+    const tIdx = TRAIT_INDEX[t.key];
+    const X = []; // N_SYNTH x (items+1)
+    const y = [];
+    const answersMatrix = [];
+    for(let s=0;s<N_SYNTH;s++){
+      const latent = synthLatents[s][tIdx];
+      const row = [];
+      items.forEach(q=>{
+        const directional = q.reverse ? (100-latent) : latent;
+        const raw = 1 + (directional/100)*4; // map 0..100 -> 1..5
+        const noisy = clamp(raw + gaussian(0,0.55), 1, 5);
+        row.push(noisy);
+      });
+      answersMatrix.push(row);
+      X.push(row.concat([1])); // bias term
+      y.push([latent]);
+    }
+    synthAnswersByTrait[t.key] = answersMatrix;
+
+    // ridge regression closed form: w = (X^T X + λI)^-1 X^T y
+    const Xt = transpose(X);
+    const XtX = matmul(Xt, X);
+    const XtXreg = addScaledIdentity(XtX, LAMBDA);
+    const XtXinv = invert(XtXreg);
+    const Xty = matmul(Xt, y); // (items+1) x 1
+    const w = matmul(XtXinv, Xty).map(r=>r[0]); // length items+1
+
+    models[t.key] = { weights:w, itemIdx: items.map(q=>q.idx) };
+  });
+
+  return { models, synthLatents, synthAnswersByTrait };
+}
+
+function predictTraitScore(model, answers /* array of 1-5 for that trait's items, same order as model.itemIdx */){
+  const w = model.weights;
+  let s = w[w.length-1]; // bias
+  for(let i=0;i<answers.length;i++) s += w[i]*answers[i];
+  return clamp(s, 0, 100);
+}
+
+// Score the whole synthetic population using the trained weights (for PCA + averages)
+function scorePopulation(MODEL){
+  const pop = []; // N_SYNTH x 5 predicted scores
+  for(let s=0;s<N_SYNTH;s++){
+    const row = TRAITS.map(t=>{
+      const model = MODEL.models[t.key];
+      const answers = MODEL.synthAnswersByTrait[t.key][s];
+      return predictTraitScore(model, answers);
+    });
+    pop.push(row);
+  }
+  return pop;
+}
+
+/* =========================================================================
+   4. PCA (power iteration + deflation — no external library)
+   ========================================================================= */
+
+function pca2D(population){
+  const n = population.length, d = population[0].length;
+  const mean = new Array(d).fill(0);
+  population.forEach(row=> row.forEach((v,j)=> mean[j]+=v/n));
+  const centered = population.map(row=> vecSub(row, mean));
+
+  // covariance matrix d x d
+  const cov = zeros(d,d);
+  centered.forEach(row=>{
+    for(let i=0;i<d;i++){
+      for(let j=0;j<d;j++){
+        cov[i][j] += (row[i]*row[j])/(n-1);
+      }
+    }
+  });
+
+  function powerIteration(M){
+    let v = new Array(d).fill(0).map(()=> rand()-0.5);
+    for(let iter=0; iter<200; iter++){
+      v = matvec(M, v);
+      const nrm = norm(v) || 1e-9;
+      v = vecScale(v, 1/nrm);
+    }
+    const Mv = matvec(M, v);
+    const eigenvalue = dot(v, Mv);
+    return { vector: v, value: eigenvalue };
+  }
+
+  const pc1 = powerIteration(cov);
+  // deflate: cov' = cov - λ1 v1 v1^T
+  const deflated = zeros(d,d);
+  for(let i=0;i<d;i++) for(let j=0;j<d;j++) deflated[i][j] = cov[i][j] - pc1.value*pc1.vector[i]*pc1.vector[j];
+  const pc2 = powerIteration(deflated);
+
+  const proj = centered.map(row => [ dot(row, pc1.vector), dot(row, pc2.vector) ]);
+
+  return { mean, pc1, pc2, proj, centered };
+}
+
+function projectPoint(point, mean, pc1vec, pc2vec){
+  const c = vecSub(point, mean);
+  return [ dot(c, pc1vec), dot(c, pc2vec) ];
+}
+
+function topLoadingLabel(vec){
+  let best=0;
+  for(let i=1;i<vec.length;i++) if(Math.abs(vec[i])>Math.abs(vec[best])) best=i;
+  const sign = vec[best] >= 0 ? '+' : '−';
+  return { name: TRAITS[best].name, sign };
+}
+
+/* =========================================================================
+   5. APP STATE
+   ========================================================================= */
+
+const state = {
+  current: 0,
+  answers: new Array(QUESTIONS.length).fill(null), // 1-5
+  MODEL: null,
+  population: null,
+  scores: null, // {O,C,E,A,N} final 0-100
+};
+
+/* =========================================================================
+   6. RENDER: screens
+   ========================================================================= */
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=> s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function traitColor(key){ return TRAITS[TRAIT_INDEX[key]].color; }
+
+function updateOrb(el, weights){
+  // weights: {O,C,E,A,N} 0-1 -> bias the conic gradient stop order/opacity subtly via custom property
+  if(!el) return;
+  const core = el.querySelector('.orb-core');
+  if(!core) return;
+  // Build a gradient where each trait color's "share" of arc length reflects its weight
+  const entries = TRAITS.map(t=> ({...t, w: Math.max(0.06, weights[t.key]||0.2)}));
+  const total = entries.reduce((s,e)=> s+e.w, 0);
+  let acc = 0;
+  const stops = entries.map(e=>{
+    const start = (acc/total)*360;
+    acc += e.w;
+    const end = (acc/total)*360;
+    return `${e.color} ${start}deg ${end}deg`;
+  });
+  core.style.background = `conic-gradient(${stops.join(',')})`;
+}
+
+/* ---- Hero ---- */
+updateOrb(document.getElementById('heroOrb'), {O:.2,C:.2,E:.2,A:.2,N:.2});
+
+/* ---- Quiz rendering ---- */
+function renderQuestion(){
+  const q = QUESTIONS[state.current];
+  const tIdx = TRAIT_INDEX[q.trait];
+  const traitMeta = TRAITS[tIdx];
+
+  document.getElementById('qTraitTag').textContent = traitMeta.name;
+  document.getElementById('qTraitTag').style.background = traitMeta.color;
+  document.getElementById('qText').textContent = q.text;
+
+  const scaleEl = document.getElementById('qScale');
+  scaleEl.innerHTML = '';
+  for(let v=1; v<=5; v++){
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="dot"></span><span class="lbl">${SCALE_LABELS[v-1]}</span>`;
+    if(state.answers[state.current]===v) btn.classList.add('sel');
+    btn.style.borderColor = state.answers[state.current]===v ? traitMeta.color : '';
+    if(state.answers[state.current]===v){ btn.classList.add('sel'); btn.style.background = traitMeta.color; }
+    btn.addEventListener('click', ()=>{
+      state.answers[state.current] = v;
+      // live-update the running orb based on answered questions so far
+      refreshQuizOrb();
+      setTimeout(()=>{
+        if(state.current < QUESTIONS.length-1){
+          state.current++;
+          renderQuestion();
+        } else {
+          finishQuiz();
+        }
+      }, 220);
+      renderQuestion();
+    });
+    scaleEl.appendChild(btn);
+  }
+
+  document.getElementById('progressFill').style.width = `${((state.current)/QUESTIONS.length)*100}%`;
+  document.getElementById('progressLabel').textContent = `${state.current+1} / ${QUESTIONS.length}`;
+  document.getElementById('backBtn').style.visibility = state.current===0 ? 'hidden' : 'visible';
+}
+
+function refreshQuizOrb(){
+  const sums = {O:0,C:0,E:0,A:0,N:0};
+  const counts = {O:0,C:0,E:0,A:0,N:0};
+  QUESTIONS.forEach((q,i)=>{
+    if(state.answers[i]!=null){
+      const val = q.reverse ? (6-state.answers[i]) : state.answers[i];
+      sums[q.trait]+=val; counts[q.trait]++;
+    }
+  });
+  const weights = {};
+  TRAITS.forEach(t=>{ weights[t.key] = counts[t.key] ? sums[t.key]/counts[t.key]/5 : 0.2; });
+  updateOrb(document.getElementById('quizOrb'), weights);
+}
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  if(state.current>0){ state.current--; renderQuestion(); }
+});
+document.getElementById('skipBtn').addEventListener('click', ()=>{
+  if(state.current < QUESTIONS.length-1){ state.current++; renderQuestion(); }
+  else { finishQuiz(); }
+});
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  state.current = 0;
+  show('screen-quiz');
+  renderQuestion();
+  refreshQuizOrb();
+});
+
+/* =========================================================================
+   7. FINISH QUIZ -> TRAIN MODEL -> SCORE -> RENDER RESULTS
+   ========================================================================= */
+
+function finishQuiz(){
+  // fill any unanswered with neutral (3)
+  for(let i=0;i<state.answers.length;i++){ if(state.answers[i]==null) state.answers[i]=3; }
+
+  state.MODEL = buildModel();
+  state.population = scorePopulation(state.MODEL);
+
+  const scores = {};
+  TRAITS.forEach(t=>{
+    const model = state.MODEL.models[t.key];
+    const answers = model.itemIdx.map(i=> state.answers[i]);
+    scores[t.key] = predictTraitScore(model, answers);
+  });
+  state.scores = scores;
+
+  show('screen-results');
+  renderResults();
+}
+
+/* ---- Written summaries (own phrasing, bucketed by score) ---- */
+const SUMMARY_TEXT = {
+  O: {
+    high:"You're drawn to novelty — new ideas, places, and ways of thinking pull you in rather than putting you off. You'd rather ask 'what if' than 'why bother.'",
+    mid:"You enjoy a fresh idea now and then, but you're just as comfortable with the familiar. Novelty is welcome, not required.",
+    low:"You know what works and you'd rather refine it than replace it. Tried-and-true beats untested-and-shiny most days."
+  },
+  C: {
+    high:"You're the one with the plan, the checklist, and the follow-through. Things you start tend to actually get finished.",
+    mid:"You're organized when it matters and relaxed when it doesn't — structure is a tool, not a religion.",
+    low:"You move more on instinct than itinerary. Plans are suggestions, and you're fine improvising the rest."
+  },
+  E: {
+    high:"A room full of people sounds like fuel, not a chore. You speak up, reach out, and tend to leave gatherings more charged than you arrived.",
+    mid:"You can work a room or enjoy a quiet night in — both genuinely appeal, depending on the day.",
+    low:"Your battery recharges in quiet, not crowds. Smaller, deeper interactions beat big, loud ones."
+  },
+  A: {
+    high:"Cooperation comes naturally to you. You extend trust first and you'd rather smooth things over than win the point.",
+    mid:"You're cooperative without being a pushover — generous by default, but not afraid to hold a line.",
+    low:"You're comfortable prioritizing your own read on a situation over keeping everyone comfortable, and you don't apologize for it."
+  },
+  N: {
+    high:"You feel things vividly and quickly — setbacks register, and your mood can move with the day's events.",
+    mid:"Stress reaches you sometimes, but it doesn't usually linger long once the moment passes.",
+    low:"Not much rattles you for long. Even under pressure, you tend to stay close to your baseline."
+  }
+};
+function bucket(score){ return score>=66 ? 'high' : score<=34 ? 'low' : 'mid'; }
+
+function dominantTraitTagline(scores){
+  let topKey = TRAITS[0].key;
+  TRAITS.forEach(t=>{ if(scores[t.key] > scores[topKey]) topKey = t.key; });
+  const topName = TRAITS[TRAIT_INDEX[topKey]].name;
+  const b = bucket(scores[topKey]);
+  const lead = b==='high' ? `Strongly ${topName.toLowerCase()}` : b==='low' ? `Notably low on ${topName.toLowerCase()}` : `Balanced, leaning ${topName.toLowerCase()}`;
+  return { topKey, label: lead };
+}
+
+/* ---- Radar chart (SVG, animated) ---- */
+const RADAR_CENTER = {x:180,y:180}, RADAR_R = 130;
+function anglesForAxes(n){ const arr=[]; for(let i=0;i<n;i++){ arr.push(-Math.PI/2 + i*(2*Math.PI/n)); } return arr; }
+
+function radarPoint(value, angle){
+  const r = (value/100)*RADAR_R;
+  return [ RADAR_CENTER.x + r*Math.cos(angle), RADAR_CENTER.y + r*Math.sin(angle) ];
+}
+function polygonString(values){
+  const angles = anglesForAxes(values.length);
+  return values.map((v,i)=> radarPoint(v, angles[i]).join(',')).join(' ');
+}
+
+function buildRadarSVG(){
+  const svg = document.getElementById('radarSvg');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const angles = anglesForAxes(5);
+
+  // background rings
+  [0.25,0.5,0.75,1].forEach(frac=>{
+    const ring = document.createElementNS(ns,'polygon');
+    ring.setAttribute('points', polygonString([100,100,100,100,100].map(v=>v*frac)));
+    ring.setAttribute('fill','none');
+    ring.setAttribute('stroke','#E7DFF5');
+    ring.setAttribute('stroke-width','1');
+    svg.appendChild(ring);
+  });
+  // axes + labels
+  angles.forEach((ang,i)=>{
+    const [x,y] = radarPoint(100, ang);
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',RADAR_CENTER.x); line.setAttribute('y1',RADAR_CENTER.y);
+    line.setAttribute('x2',x); line.setAttribute('y2',y);
+    line.setAttribute('stroke','#E7DFF5'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+
+    const [lx,ly] = radarPoint(122, ang);
+    const label = document.createElementNS(ns,'text');
+    label.setAttribute('x',lx); label.setAttribute('y',ly);
+    label.setAttribute('text-anchor','middle'); label.setAttribute('dominant-baseline','middle');
+    label.setAttribute('font-size','11'); label.setAttribute('font-family',"'Space Mono', monospace");
+    label.setAttribute('fill', TRAITS[i].color);
+    label.setAttribute('font-weight','700');
+    label.textContent = TRAITS[i].key;
+    svg.appendChild(label);
+  });
+
+  // average polygon (dashed)
+  const avgPoly = document.createElementNS(ns,'polygon');
+  avgPoly.id = 'avgPoly';
+  avgPoly.setAttribute('points', polygonString([0,0,0,0,0]));
+  avgPoly.setAttribute('fill','rgba(91,75,110,0.06)');
+  avgPoly.setAttribute('stroke','#5B4B6E');
+  avgPoly.setAttribute('stroke-width','1.5');
+  avgPoly.setAttribute('stroke-dasharray','5,4');
+  avgPoly.style.opacity = '0';
+  avgPoly.style.transition = 'opacity .4s ease';
+  svg.appendChild(avgPoly);
+
+  // user polygon (animated fill, gradient stroke via defs)
+  const defs = document.createElementNS(ns,'defs');
+  const grad = document.createElementNS(ns,'linearGradient');
+  grad.setAttribute('id','userGrad'); grad.setAttribute('x1','0%'); grad.setAttribute('y1','0%'); grad.setAttribute('x2','100%'); grad.setAttribute('y2','100%');
+  TRAITS.forEach((t,i)=>{
+    const stop = document.createElementNS(ns,'stop');
+    stop.setAttribute('offset', `${(i/(TRAITS.length-1))*100}%`);
+    stop.setAttribute('stop-color', t.color);
+    grad.appendChild(stop);
+  });
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  const userPoly = document.createElementNS(ns,'polygon');
+  userPoly.id = 'userPoly';
+  userPoly.setAttribute('points', polygonString([0,0,0,0,0]));
+  userPoly.setAttribute('fill','url(#userGrad)');
+  userPoly.setAttribute('fill-opacity','0.28');
+  userPoly.setAttribute('stroke','url(#userGrad)');
+  userPoly.setAttribute('stroke-width','2.5');
+  svg.appendChild(userPoly);
+
+  // vertex dots
+  TRAITS.forEach((t,i)=>{
+    const dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('class','vertex-dot-'+i);
+    dot.setAttribute('r','5');
+    dot.setAttribute('fill', t.color);
+    dot.setAttribute('cx', RADAR_CENTER.x); dot.setAttribute('cy', RADAR_CENTER.y);
+    svg.appendChild(dot);
+  });
+}
+
+function animateRadar(targetValues, avgValues, showAvg){
+  const userPoly = document.getElementById('userPoly');
+  const avgPoly = document.getElementById('avgPoly');
+  avgPoly.style.opacity = showAvg ? '1' : '0';
+
+  const duration = 1100;
+  const start = performance.now();
+  const angles = anglesForAxes(5);
+
+  function frame(now){
+    const t = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-t, 3); // ease-out cubic
+    const current = targetValues.map(v=> v*eased);
+    userPoly.setAttribute('points', polygonString(current));
+    avgPoly.setAttribute('points', polygonString(avgValues.map(v=> v*eased)));
+    current.forEach((v,i)=>{
+      const [x,y] = radarPoint(v, angles[i]);
+      const dot = document.querySelector('.vertex-dot-'+i);
+      if(dot){ dot.setAttribute('cx',x); dot.setAttribute('cy',y); }
+    });
+    if(t<1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---- PCA scatter ---- */
+function buildPCASVG(pcaResult, userProj){
+  const svg = document.getElementById('pcaSvg');
+  svg.innerHTML = '';
+  const ns='http://www.w3.org/2000/svg';
+  const W=360,H=300, cx=W/2, cy=H/2;
+
+  // scale: find max abs across population + user for consistent framing
+  let maxAbs = 1;
+  pcaResult.proj.forEach(p=> maxAbs = Math.max(maxAbs, Math.abs(p[0]), Math.abs(p[1])));
+  maxAbs = Math.max(maxAbs, Math.abs(userProj[0]), Math.abs(userProj[1])) * 1.15;
+  const scale = (val)=> (val/maxAbs) * (Math.min(W,H)/2 - 24);
+
+  // axes
+  const axisH = document.createElementNS(ns,'line');
+  axisH.setAttribute('x1',16); axisH.setAttribute('x2',W-16); axisH.setAttribute('y1',cy); axisH.setAttribute('y2',cy);
+  axisH.setAttribute('stroke','#E7DFF5');
+  svg.appendChild(axisH);
+  const axisV = document.createElementNS(ns,'line');
+  axisV.setAttribute('y1',16); axisV.setAttribute('y2',H-16); axisV.setAttribute('x1',cx); axisV.setAttribute('x2',cx);
+  axisV.setAttribute('stroke','#E7DFF5');
+  svg.appendChild(axisV);
+
+  const lblPC1 = document.createElementNS(ns,'text');
+  lblPC1.setAttribute('x', W-18); lblPC1.setAttribute('y', cy-8);
+  lblPC1.setAttribute('font-family',"'Space Mono', monospace"); lblPC1.setAttribute('font-size','10'); lblPC1.setAttribute('fill','#5B4B6E');
+  lblPC1.setAttribute('text-anchor','end');
+  lblPC1.textContent = 'PC1';
+  svg.appendChild(lblPC1);
+  const lblPC2 = document.createElementNS(ns,'text');
+  lblPC2.setAttribute('x', cx+8); lblPC2.setAttribute('y', 24);
+  lblPC2.setAttribute('font-family',"'Space Mono', monospace"); lblPC2.setAttribute('font-size','10'); lblPC2.setAttribute('fill','#5B4B6E');
+  lblPC2.textContent = 'PC2';
+  svg.appendChild(lblPC2);
+
+  // population cloud (subsample for clarity)
+  pcaResult.proj.forEach((p,i)=>{
+    if(i%2!==0) return; // thin to ~200 points
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('cx', cx+scale(p[0]));
+    c.setAttribute('cy', cy-scale(p[1]));
+    c.setAttribute('r','2.6');
+    c.setAttribute('fill','#6C7FFF');
+    c.setAttribute('opacity','0.18');
+    svg.appendChild(c);
+  });
+
+  // average marker (origin, ring)
+  const avgRing = document.createElementNS(ns,'circle');
+  avgRing.setAttribute('cx',cx); avgRing.setAttribute('cy',cy); avgRing.setAttribute('r','7');
+  avgRing.setAttribute('fill','none'); avgRing.setAttribute('stroke','#5B4B6E'); avgRing.setAttribute('stroke-width','2'); avgRing.setAttribute('stroke-dasharray','3,3');
+  svg.appendChild(avgRing);
+
+  // user marker (animated pop-in)
+  const ux = cx+scale(userProj[0]), uy = cy-scale(userProj[1]);
+  const userDot = document.createElementNS(ns,'circle');
+  userDot.setAttribute('cx',ux); userDot.setAttribute('cy',uy); userDot.setAttribute('r','0');
+  userDot.setAttribute('fill','#FF4D8D');
+  userDot.setAttribute('stroke','#fff'); userDot.setAttribute('stroke-width','2');
+  svg.appendChild(userDot);
+  let r=0;
+  const grow=()=>{ r+=0.6; userDot.setAttribute('r', Math.min(r,8)); if(r<8) requestAnimationFrame(grow); };
+  requestAnimationFrame(grow);
+
+  const labelYou = document.createElementNS(ns,'text');
+  labelYou.setAttribute('x',ux+12); labelYou.setAttribute('y',uy+4);
+  labelYou.setAttribute('font-family',"'Fredoka', sans-serif"); labelYou.setAttribute('font-size','12'); labelYou.setAttribute('font-weight','600'); labelYou.setAttribute('fill','#241433');
+  labelYou.textContent='You';
+  svg.appendChild(labelYou);
+}
+
+/* ---- Main results render ---- */
+let avgOverlayOn = false;
+
+function renderResults(){
+  const scores = state.scores;
+  const ordered = TRAITS.map(t=> scores[t.key]);
+
+  // population means (for "average" overlay + PCA reference)
+  const popMeans = TRAITS.map((t,i)=> state.population.reduce((s,row)=> s+row[i],0)/state.population.length);
+
+  // ---- header / orb / tagline ----
+  const weightsForOrb = {}; TRAITS.forEach(t=> weightsForOrb[t.key]= scores[t.key]/100);
+  updateOrb(document.getElementById('resultOrb'), weightsForOrb);
+  const dom = dominantTraitTagline(scores);
+  document.getElementById('resultTitle').textContent = `Your aura leans ${TRAITS[TRAIT_INDEX[dom.topKey]].name}`;
+  document.getElementById('resultTagline').textContent = `${dom.label}. Trained on ${N_SYNTH} simulated respondents, your five scores were predicted by a small ridge-regression model — one per trait — then placed on the map below using PCA.`;
+
+  // ---- radar ----
+  buildRadarSVG();
+  animateRadar(ordered, popMeans, avgOverlayOn);
+
+  // ---- trait list ----
+  const list = document.getElementById('traitList');
+  list.innerHTML = '';
+  TRAITS.forEach(t=>{
+    const score = Math.round(scores[t.key]);
+    const row = document.createElement('div');
+    row.className = 'trait-row';
+    row.innerHTML = `
+      <div class="trait-row-top">
+        <div class="trait-name"><span class="trait-dot" style="background:${t.color}"></span>${t.name}</div>
+        <div class="trait-score">${score} / 100</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:${t.color};"></div></div>
+      <div class="trait-desc">${SUMMARY_TEXT[t.key][bucket(score)]}</div>
+    `;
+    list.appendChild(row);
+    requestAnimationFrame(()=>{ row.querySelector('.bar-fill').style.width = score+'%'; });
+  });
+
+  // ---- PCA ----
+  const pcaResult = pca2D(state.population);
+  const userVec = TRAITS.map(t=> scores[t.key]);
+  const userProj = projectPoint(userVec, pcaResult.mean, pcaResult.pc1.vector, pcaResult.pc2.vector);
+  buildPCASVG(pcaResult, userProj);
+  const l1 = topLoadingLabel(pcaResult.pc1.vector);
+  const l2 = topLoadingLabel(pcaResult.pc2.vector);
+  document.getElementById('pcaCaption').innerHTML =
+    `Each faint dot is one of ${N_SYNTH} simulated personalities; the dashed ring marks the average. Your model-predicted score sits at the bright pink dot. In this simulated population, <b>PC1</b> is driven mostly by <b>${l1.name}</b>, and <b>PC2</b> mostly by <b>${l2.name}</b> — the exact axes shift slightly each time the model retrains.`;
+
+  // ---- share card ----
+  drawShareCard(scores, dom);
+}
+
+document.getElementById('avgToggle').addEventListener('click', function(){
+  avgOverlayOn = !avgOverlayOn;
+  this.classList.toggle('on', avgOverlayOn);
+  const avgPoly = document.getElementById('avgPoly');
+  if(avgPoly) avgPoly.style.opacity = avgOverlayOn ? '1' : '0';
+});
+
+document.getElementById('retakeBtn').addEventListener('click', ()=>{
+  state.current = 0;
+  state.answers = new Array(QUESTIONS.length).fill(null);
+  avgOverlayOn = false;
+  document.getElementById('avgToggle').classList.remove('on');
+  show('screen-hero');
+});
+
+/* =========================================================================
+   8. SHAREABLE CARD (canvas)
+   ========================================================================= */
+
+function hexToRgb(hex){
+  const v = hex.replace('#','');
+  return [parseInt(v.substring(0,2),16), parseInt(v.substring(2,4),16), parseInt(v.substring(4,6),16)];
+}
+function lerpColor(c1,c2,t){
+  return `rgb(${Math.round(c1[0]+(c2[0]-c1[0])*t)},${Math.round(c1[1]+(c2[1]-c1[1])*t)},${Math.round(c1[2]+(c2[2]-c1[2])*t)})`;
+}
+
+function drawShareCard(scores, dom){
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const sortedTraits = TRAITS.slice().sort((a,b)=> scores[b.key]-scores[a.key]);
+  const c1 = hexToRgb(sortedTraits[0].color), c2 = hexToRgb(sortedTraits[1].color);
+
+  const render = ()=>{
+    // background gradient blend of top 2 traits
+    const grad = ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0, lerpColor(c1,c2,0));
+    grad.addColorStop(1, lerpColor(c1,c2,1));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    // soft white panel
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    roundRect(ctx, 28, 150, W-56, H-150-28, 28);
+    ctx.fill();
+    ctx.restore();
+
+    // header
+    ctx.fillStyle = '#fff';
+    ctx.font = "600 22px 'Fredoka', sans-serif";
+    ctx.textAlign = 'left';
+    ctx.fillText('MY PERSONALITY AURA', 36, 60);
+    ctx.font = "500 15px 'Plus Jakarta Sans', sans-serif";
+    ctx.globalAlpha = 0.9;
+    ctx.fillText(`Leaning ${TRAITS[TRAIT_INDEX[dom.topKey]].name}`, 36, 88);
+    ctx.globalAlpha = 1;
+
+    // mini radar inside white panel
+    const rcx = W/2, rcy = 320, rr = 110;
+    const order = TRAITS.map(t=>t.key);
+    const angles = anglesForAxes(5);
+    ctx.strokeStyle = '#E7DFF5'; ctx.lineWidth = 1;
+    [0.33,0.66,1].forEach(f=>{
+      ctx.beginPath();
+      angles.forEach((ang,i)=>{
+        const r = rr*f;
+        const x = rcx + r*Math.cos(ang), y = rcy + r*Math.sin(ang);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.closePath(); ctx.stroke();
+    });
+    // user polygon
+    ctx.beginPath();
+    order.forEach((k,i)=>{
+      const val = scores[k]/100*rr;
+      const x = rcx + val*Math.cos(angles[i]), y = rcy + val*Math.sin(angles[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,77,141,0.22)';
+    ctx.fill();
+    ctx.strokeStyle = '#FF4D8D'; ctx.lineWidth=2.5; ctx.stroke();
+    // vertex labels
+    order.forEach((k,i)=>{
+      const lx = rcx + (rr+24)*Math.cos(angles[i]), ly = rcy + (rr+24)*Math.sin(angles[i]);
+      ctx.fillStyle = TRAITS[TRAIT_INDEX[k]].color;
+      ctx.font = "700 12px 'Space Mono', monospace";
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(k, lx, ly);
+    });
+    ctx.textBaseline = 'alphabetic';
+
+    // trait bars
+    let by = 470;
+    TRAITS.forEach(t=>{
+      const score = Math.round(scores[t.key]);
+      ctx.fillStyle = '#241433';
+      ctx.font = "600 13px 'Fredoka', sans-serif";
+      ctx.textAlign='left';
+      ctx.fillText(t.name, 40, by-6);
+      ctx.fillStyle = '#5B4B6E';
+      ctx.font = "13px 'Space Mono', monospace";
+      ctx.textAlign='right';
+      ctx.fillText(String(score), W-40, by-6);
+
+      ctx.fillStyle = '#EFE9FB';
+      roundRect(ctx, 40, by, W-80, 10, 5); ctx.fill();
+      ctx.fillStyle = t.color;
+      roundRect(ctx, 40, by, Math.max(10,(W-80)*(score/100)), 10, 5); ctx.fill();
+      by += 38;
+    });
+
+    // footer
+    ctx.fillStyle = '#5B4B6E';
+    ctx.font = "12px 'Space Mono', monospace";
+    ctx.textAlign='center';
+    ctx.fillText('made with the aura test · big five, simulated & predicted', W/2, H-26);
+  };
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(render);
+  } else {
+    render();
+  }
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const canvas = document.getElementById('shareCanvas');
+  const link = document.createElement('a');
+  link.download = 'my-personality-aura.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+})();
+</script>
+</body>
+</html>
